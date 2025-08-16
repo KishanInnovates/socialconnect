@@ -34,16 +34,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // Get users that the current user follows
-    const { data: following } = await supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', user.user_id)
-
-    const followingIds = following?.map(f => f.following_id) || []
-    followingIds.push(user.user_id) // Include own posts
-
-    // Get posts from followed users and self
+    // Get all posts from all users (public feed)
     const { data: posts, error } = await supabase
       .from('posts')
       .select(`
@@ -55,7 +46,6 @@ export async function GET(request: NextRequest) {
           last_name
         )
       `)
-      .in('author_id', followingIds)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .range((page - 1) * limit, page * limit - 1)
@@ -72,7 +62,6 @@ export async function GET(request: NextRequest) {
     const { count } = await supabase
       .from('posts')
       .select('*', { count: 'exact', head: true })
-      .in('author_id', followingIds)
       .eq('is_active', true)
 
     const total = count || 0
